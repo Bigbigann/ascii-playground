@@ -75,9 +75,13 @@ export function frameToColoredASCII(
     ? (settings.customChars || ' .:#@')
     : CHARSETS[settings.charset];
   
-  // Calculate sampling rate based on target width
-  const sampleX = Math.max(1, Math.floor(width / targetWidth));
-  const sampleY = Math.floor(sampleX * 2); // Characters are ~2x taller than wide
+  // Output grid: cols × rows. rows is chosen so the rendered grid
+  // (cols * 0.6 × rows) preserves the source aspect ratio.
+  // Iterating by output index (rather than integer stride through source pixels)
+  // keeps aspect stable across all resolutions — integer striding aliases the
+  // ratio at small strides and visibly squashes the image as resolution changes.
+  const cols = Math.max(1, Math.min(targetWidth, width));
+  const rows = Math.max(1, Math.round((cols * height * 0.6) / width));
 
   // Hoist invariants outside the per-pixel loop
   const brightnessOffset = settings.brightness * 2.55;
@@ -97,10 +101,12 @@ export function frameToColoredASCII(
 
   const lines: ColoredChar[][] = [];
 
-  for (let y = 0; y < height; y += sampleY) {
+  for (let r = 0; r < rows; r++) {
+    const y = Math.min(height - 1, Math.floor((r * height) / rows));
     const row: ColoredChar[] = [];
 
-    for (let x = 0; x < width; x += sampleX) {
+    for (let c = 0; c < cols; c++) {
+      const x = Math.min(width - 1, Math.floor((c * width) / cols));
       const idx = (y * width + x) * 4;
 
       const r = data[idx];

@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { ControlPanel } from '@/components/ascii/control-panel';
 import { ASCIIImage, type ASCIIImageHandle } from '@/components/ascii/ascii-image';
 import { ASCIIVideo, type ASCIIVideoHandle } from '@/components/ascii/ascii-video';
@@ -16,6 +17,35 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 
 const ACCEPTED_TYPES = 'image/png,image/jpeg,image/jpg,image/gif,image/webp,video/mp4,video/webm,video/ogg,video/quicktime';
+
+const SCRAMBLE_GLYPHS = '!@#$%^&*()_+-=<>?/\\|[]{}~"\'.;:,1234567890';
+
+function Scramble({ text, durationMs = 700, className }: { text: string; durationMs?: number; className?: string }) {
+  const [display, setDisplay] = useState(() => text.replace(/\S/g, '_'));
+
+  useEffect(() => {
+    const settleAt = text.split('').map(() => 150 + Math.random() * (durationMs - 150));
+    const start = performance.now();
+    const tick = () => {
+      const elapsed = performance.now() - start;
+      let allSettled = true;
+      const next = text.split('').map((c, i) => {
+        if (c === ' ') return ' ';
+        if (elapsed >= settleAt[i]) return c;
+        allSettled = false;
+        return SCRAMBLE_GLYPHS[Math.floor(Math.random() * SCRAMBLE_GLYPHS.length)];
+      });
+      setDisplay(next.join(''));
+      return allSettled;
+    };
+    const id = setInterval(() => {
+      if (tick()) clearInterval(id);
+    }, 30);
+    return () => clearInterval(id);
+  }, [text, durationMs]);
+
+  return <span className={className}>{display}</span>;
+}
 
 export default function ASCIIPlayground() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -116,8 +146,8 @@ export default function ASCIIPlayground() {
   const sidebarContent = (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h1 className="text-sm font-semibold text-foreground tracking-tight">
-          ASCII Playground
+        <h1 className="text-sm font-semibold font-mono text-foreground tracking-tight">
+          Purrscii
         </h1>
         <div className="flex items-center gap-1">
           <ThemeToggle />
@@ -137,7 +167,7 @@ export default function ASCIIPlayground() {
         </h3>
         <Button
           variant="outline"
-          className="w-full justify-center text-xs h-8 border-dashed"
+          className="w-full justify-center text-xs h-8"
           onClick={handleFileSelect}
         >
           <Upload className="h-3 w-3 mr-1.5" />
@@ -211,6 +241,44 @@ export default function ASCIIPlayground() {
           </p>
         )}
       </div>
+
+      {hasAssets && (
+        <div className="flex justify-end pointer-events-none">
+          <div className="h-28 w-28">
+            <video
+              src="/cat_sleep.mp4"
+              autoPlay
+              muted
+              playsInline
+              onEnded={(e) => {
+                const v = e.currentTarget;
+                setTimeout(() => {
+                  if (!v.isConnected) return;
+                  v.currentTime = 0;
+                  v.play().catch(() => {});
+                }, 3000 + Math.random() * 3000);
+              }}
+              className="h-full w-full object-contain mix-blend-multiply dark:hidden"
+              style={{ filter: 'contrast(1.8)' }}
+            />
+            <video
+              src="/cat_sleepdark.mp4"
+              autoPlay
+              muted
+              playsInline
+              onEnded={(e) => {
+                const v = e.currentTarget;
+                setTimeout(() => {
+                  if (!v.isConnected) return;
+                  v.currentTime = 0;
+                  v.play().catch(() => {});
+                }, 3000 + Math.random() * 3000);
+              }}
+              className="h-full w-full object-contain hidden dark:block"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -275,10 +343,51 @@ export default function ASCIIPlayground() {
             className="flex-1 flex items-center justify-center cursor-pointer text-preview-foreground/40 hover:text-preview-foreground/60 transition-colors"
           >
             <div className="flex flex-col items-center gap-4">
-              <ImageIcon className="h-16 w-16 stroke-1" />
+              <video
+                src="/cat_load1.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-44 w-44 object-contain mix-blend-multiply dark:hidden"
+                style={{ filter: 'contrast(1.8)' }}
+              />
+              <video
+                src="/cat_loaddark.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-44 w-44 object-contain mix-blend-screen hidden dark:block"
+                style={{ filter: 'contrast(1.8)' }}
+              />
               <div className="text-center">
-                <p className="text-sm font-medium">Drop an image or video here</p>
-                <p className="text-xs mt-1">or click to browse</p>
+                <p className="text-sm font-medium font-mono">
+                  <Scramble text="Turn the world into words." durationMs={700} />
+                </p>
+                <motion.p
+                  className="text-xs mt-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.75, duration: 0.3 }}
+                >
+                  Drop an image or video to begin
+                </motion.p>
+                <motion.p
+                  className="text-xs"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.95, duration: 0.3 }}
+                >
+                  or click to open the void
+                  <motion.span
+                    className="inline-block ml-0.5 align-baseline"
+                    animate={{ opacity: [1, 0] }}
+                    transition={{ repeat: Infinity, duration: 1, ease: 'linear', times: [0.5, 0.5] }}
+                  >
+                    ▮
+                  </motion.span>
+                </motion.p>
               </div>
             </div>
           </button>

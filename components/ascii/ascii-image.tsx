@@ -109,23 +109,19 @@ export const ASCIIImage = forwardRef<ASCIIImageHandle, ASCIIImageProps>(function
     },
   }), [asciiData, settings]);
 
-  // Generate glow style for a character
-  const getGlowStyle = useMemo(() => {
-    const glowEnabled = settings.glowEnabled ?? false;
-    if (!glowEnabled) return () => ({});
-    
+  // Glow style applied once to the whole block (textShadow inherits to all child glyphs).
+  // In color/duotone mode the glow uses the mono char color as a uniform hue — per-char
+  // glow color was prohibitively expensive at high resolutions.
+  const blockGlowStyle = useMemo(() => {
+    if (!(settings.glowEnabled ?? false)) return undefined;
     const intensity = (settings.glowIntensity ?? 50) / 100;
     const size = settings.glowSize ?? 8;
-    
-    return (glowColor: string) => ({
-      textShadow: `
-        0 0 ${size * 0.5}px ${glowColor},
-        0 0 ${size}px ${glowColor},
-        0 0 ${size * 1.5}px ${glowColor}
-      `.trim(),
+    const color = settings.monoCharColor ?? '#4ade80';
+    return {
+      textShadow: `0 0 ${size * 0.5}px ${color}, 0 0 ${size}px ${color}, 0 0 ${size * 1.5}px ${color}`,
       filter: `brightness(${1 + intensity * 0.5})`,
-    });
-  }, [settings.glowEnabled, settings.glowIntensity, settings.glowSize]);
+    } as React.CSSProperties;
+  }, [settings.glowEnabled, settings.glowIntensity, settings.glowSize, settings.monoCharColor]);
 
   const isColorMode = settings.colorMode === 'color' || settings.colorMode === 'duotone';
   
@@ -147,6 +143,7 @@ export const ASCIIImage = forwardRef<ASCIIImageHandle, ASCIIImageProps>(function
           opacity: settings.charOpacity / 100,
           backgroundColor: settings.colorMode === 'mono' ? monoBgColor : undefined,
           padding: settings.colorMode === 'mono' ? '0.5em' : undefined,
+          ...blockGlowStyle,
         }}
       >
         {asciiData.map((row, rowIndex) => (
@@ -154,37 +151,15 @@ export const ASCIIImage = forwardRef<ASCIIImageHandle, ASCIIImageProps>(function
             {isColorMode ? (
               // Colored/Duotone mode: each character has its own color
               row.map((item, charIndex) => (
-                <span 
-                  key={charIndex} 
-                  style={{ 
-                    color: item.color,
-                    ...getGlowStyle(item.glowColor),
-                  }}
-                >
+                <span key={charIndex} style={{ color: item.color }}>
                   {item.char}
                 </span>
               ))
             ) : (
-              // Monochrome mode
-              (settings.glowEnabled ?? false) ? (
-                // With glow: render each char individually for per-char glow
-                row.map((item, charIndex) => (
-                  <span 
-                    key={charIndex}
-                    style={{
-                      color: monoCharColor,
-                      ...getGlowStyle(item.glowColor),
-                    }}
-                  >
-                    {item.char}
-                  </span>
-                ))
-              ) : (
-                // No glow: render as single string for performance
-                <span style={{ color: monoCharColor }}>
-                  {row.map(item => item.char).join('')}
-                </span>
-              )
+              // Monochrome mode: single span
+              <span style={{ color: monoCharColor }}>
+                {row.map(item => item.char).join('')}
+              </span>
             )}
           </div>
         ))}

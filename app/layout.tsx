@@ -14,25 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'ASCII Video Playground',
+  title: 'Purrscii — Turn the World Into Words',
   description: 'Transform your videos into real-time ASCII art animations',
-  generator: 'v0.app',
   icons: {
     icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
+      { url: '/favicon_light.jpg', media: '(prefers-color-scheme: light)' },
+      { url: '/favicon_dark.jpg', media: '(prefers-color-scheme: dark)' },
     ],
-    apple: '/apple-icon.png',
   },
 }
 
@@ -44,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
         </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}

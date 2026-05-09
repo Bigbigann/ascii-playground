@@ -34,7 +34,7 @@ export function AudioControls({
       {!hasAudio ? (
         <Button
           variant="outline"
-          className="w-full justify-center text-xs h-8 border-dashed"
+          className="w-full justify-center text-xs h-8"
           onClick={onUpload}
         >
           <Music className="h-3 w-3 mr-1.5" />
