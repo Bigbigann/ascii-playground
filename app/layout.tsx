@@ -17,10 +17,7 @@ export const metadata: Metadata = {
   title: 'Purrscii — Turn the World Into Words',
   description: 'Transform your videos into real-time ASCII art animations',
   icons: {
-    icon: [
-      { url: '/favicon_light.jpg', media: '(prefers-color-scheme: light)' },
-      { url: '/favicon_dark.jpg', media: '(prefers-color-scheme: dark)' },
-    ],
+    icon: '/favicon_light.png',
   },
 }
 

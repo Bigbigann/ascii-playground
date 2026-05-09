@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
+import { useTheme } from 'next-themes';
 import { ControlPanel } from '@/components/ascii/control-panel';
 import { ASCIIImage, type ASCIIImageHandle } from '@/components/ascii/ascii-image';
 import { ASCIIVideo, type ASCIIVideoHandle } from '@/components/ascii/ascii-video';
@@ -11,14 +12,88 @@ import { useAssetManager, MAX_ASSETS } from '@/hooks/use-asset-manager';
 import { useBackgroundAudio } from '@/hooks/use-background-audio';
 import { AudioControls } from '@/components/ascii/audio-controls';
 import { Button } from '@/components/ui/button';
-import { Upload, Menu, ImageIcon, PanelRightClose, PanelRightOpen, Download, Loader2 } from 'lucide-react';
+import { Upload, Menu, ImageIcon, PanelRightClose, PanelRightOpen, Download, Loader2, VolumeX } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 
 const ACCEPTED_TYPES = 'image/png,image/jpeg,image/jpg,image/gif,image/webp,video/mp4,video/webm,video/ogg,video/quicktime';
 
 const SCRAMBLE_GLYPHS = '!@#$%^&*()_+-=<>?/\\|[]{}~"\'.;:,1234567890';
+
+function LandingAmbient({ enabled }: { enabled: boolean }) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const src = resolvedTheme === 'dark' ? '/night.mp3' : '/day.mp3';
+
+  useEffect(() => {
+    if (!mounted || !enabled) return;
+    const a = audioRef.current;
+    if (!a) return;
+    a.volume = 0.9;
+    a.loop = true;
+    a.play().catch(() => {});
+    return () => {
+      a.pause();
+    };
+  }, [mounted, enabled, src]);
+
+  if (!mounted || !enabled) return null;
+  return <audio ref={audioRef} src={src} preload="auto" />;
+}
+
+function AmbientToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  const [mounted, setMounted] = useState(false);
+  const [tipOpen, setTipOpen] = useState(true);
+  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    if (!mounted) return;
+    const id = setTimeout(() => setTipOpen(false), 5000);
+    return () => clearTimeout(id);
+  }, [mounted]);
+  if (!mounted) return null;
+  const label = on ? 'Silence the cat' : 'Wake the cat';
+  return (
+    <Tooltip open={tipOpen} onOpenChange={setTipOpen}>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onToggle}
+          className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+          aria-label={label}
+        >
+          {on ? (
+            <div className="flex items-end gap-0.5 h-4 w-4 px-0.5 py-[3px]">
+              {[0, 1, 2].map((i) => (
+                <motion.span
+                  key={i}
+                  className="flex-1 bg-current rounded-sm"
+                  animate={{ scaleY: [0.3, 1, 0.3] }}
+                  transition={{ duration: 0.7 + i * 0.1, repeat: Infinity, delay: i * 0.12, ease: 'easeInOut' }}
+                  style={{ originY: 1, height: '100%' }}
+                />
+              ))}
+            </div>
+          ) : (
+            <VolumeX className="h-4 w-4" />
+          )}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent
+        className="bg-white text-neutral-900 border border-neutral-200 dark:bg-neutral-900 dark:text-white dark:border-neutral-800"
+        arrowClassName="bg-white fill-white dark:bg-neutral-900 dark:fill-neutral-900"
+      >
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
 
 function Scramble({ text, durationMs = 700, className }: { text: string; durationMs?: number; className?: string }) {
   const [display, setDisplay] = useState(() => text.replace(/\S/g, '_'));
@@ -52,6 +127,7 @@ export default function ASCIIPlayground() {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [exportProgress, setExportProgress] = useState<number | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [ambientOn, setAmbientOn] = useState(false);
   const imageRef = useRef<ASCIIImageHandle>(null);
   const videoRef = useRef<ASCIIVideoHandle>(null);
 
@@ -90,6 +166,10 @@ export default function ASCIIPlayground() {
   }, [ingestFile]);
 
   const audio = useBackgroundAudio();
+
+  useEffect(() => {
+    if (audio.isPlaying) setAmbientOn(false);
+  }, [audio.isPlaying]);
 
   const handleAudioUpload = useCallback(() => {
     const input = document.createElement('input');
@@ -149,7 +229,8 @@ export default function ASCIIPlayground() {
         <h1 className="text-sm font-semibold font-mono text-foreground tracking-tight">
           Purrscii
         </h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {!hasAssets && <AmbientToggle on={ambientOn} onToggle={() => setAmbientOn((v) => !v)} />}
           <ThemeToggle />
           <button
             onClick={() => setSidebarCollapsed(true)}
@@ -337,11 +418,13 @@ export default function ASCIIPlayground() {
             />
           </>
         ) : (
-          <button
-            type="button"
-            onClick={handleFileSelect}
-            className="flex-1 flex items-center justify-center cursor-pointer text-preview-foreground/40 hover:text-preview-foreground/60 transition-colors"
-          >
+          <>
+            {!hasAssets && <LandingAmbient enabled={ambientOn} />}
+            <button
+              type="button"
+              onClick={handleFileSelect}
+              className="flex-1 flex items-center justify-center cursor-pointer text-preview-foreground/40 hover:text-preview-foreground/60 transition-colors"
+            >
             <div className="flex flex-col items-center gap-4">
               <video
                 src="/cat_load1.mp4"
@@ -391,6 +474,7 @@ export default function ASCIIPlayground() {
               </div>
             </div>
           </button>
+          </>
         )}
 
         {isDraggingOver && (
