@@ -384,17 +384,11 @@ function AmbientTuner({
 
 function AmbientToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   const [mounted, setMounted] = useState(false);
-  const [tipOpen, setTipOpen] = useState(true);
   useEffect(() => { setMounted(true); }, []);
-  useEffect(() => {
-    if (!mounted) return;
-    const id = setTimeout(() => setTipOpen(false), 5000);
-    return () => clearTimeout(id);
-  }, [mounted]);
   if (!mounted) return null;
   const label = on ? 'Silence the cat' : 'Wake the cat';
   return (
-    <Tooltip open={tipOpen} onOpenChange={setTipOpen}>
+    <Tooltip>
       <TooltipTrigger asChild>
         <button
           onClick={onToggle}
