@@ -13,7 +13,7 @@ import { useBackgroundAudio } from '@/hooks/use-background-audio';
 import { AudioControls } from '@/components/ascii/audio-controls';
 import { Button } from '@/components/ui/button';
 import { Upload, Menu, ImageIcon, PanelRightClose, PanelRightOpen, Download, Loader2, VolumeX } from 'lucide-react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
@@ -638,12 +638,12 @@ export default function ASCIIPlayground() {
         <h1 className="text-sm font-semibold font-mono text-foreground tracking-tight">
           Purrscii
         </h1>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pr-7 lg:pr-0">
           <AmbientToggle on={ambientOn} onToggle={() => setAmbientOn((v) => !v)} />
           <ThemeToggle />
           <button
             onClick={() => setSidebarCollapsed(true)}
-            className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            className="hidden lg:inline-flex p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             title="Collapse panel"
           >
             <PanelRightClose className="h-4 w-4" />
@@ -923,6 +923,7 @@ export default function ASCIIPlayground() {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-80 p-0">
+              <SheetTitle className="sr-only">Purrscii controls</SheetTitle>
               {sidebarContent}
             </SheetContent>
           </Sheet>
